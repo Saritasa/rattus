@@ -7,25 +7,24 @@ import (
 	"github.com/aws/aws-sdk-go/service/secretsmanager"
 )
 
-func createAWSSession(AWSRegion, AWSKeyID, AWSKeySecret string) (*session.Session, error) {
-	var awsCredentials *credentials.Credentials
-	var awsSession *session.Session
+// Used SDK https://github.com/aws/aws-sdk-go
 
-	if (AWSKeyID != "") && (AWSKeySecret != "") {
-		awsCredentials = credentials.NewStaticCredentials(AWSKeyID, AWSKeySecret, "")
+func createAWSSession(AWSRegion, AWSKeyID, AWSKeySecret, AWSSessionToken string) (*session.Session, error) {
+	if (AWSRegion != "") && (AWSKeyID != "") && (AWSKeySecret != "") {
+		return session.NewSession(&aws.Config{
+			Region:      aws.String(AWSRegion),
+			Credentials: credentials.NewStaticCredentials(AWSKeyID, AWSKeySecret, AWSSessionToken),
+		})
+	} else {
+		// Load creds from environment, shared credentials (~/.aws/credentials),
+		// or EC2 Instance Role.
+		return session.NewSession()
 	}
-
-	awsSession, err := session.NewSession(&aws.Config{
-		Region:      aws.String(AWSRegion),
-		Credentials: awsCredentials,
-	})
-
-	return awsSession, err
 }
 
-func getAWSSecretString(secretName, AWSRegion, AWSKeyID, AWSKeySecret string) (string, error) {
+func getAWSSecretString(secretName, AWSRegion, AWSKeyID, AWSKeySecret, AWSSessionToken string) (string, error) {
 	var secret string
-	awsSession, err := createAWSSession(AWSRegion, AWSKeyID, AWSKeySecret)
+	awsSession, err := createAWSSession(AWSRegion, AWSKeyID, AWSKeySecret, AWSSessionToken)
 	if err != nil {
 		return secret, err
 	}

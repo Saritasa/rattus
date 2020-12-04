@@ -1,0 +1,52 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Version'     
+        required: true
+      body:
+        description: 'Release description'
+        required: true
+      draft:
+        description: 'is draft?'
+        required: true
+        default: 'true'
+      prerelease:
+        description: 'Is PreRelease?'
+        required: true
+        default: 'true'
+
+jobs:
+  build:
+    name: Upload Release Builds
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.inputs.tag }}
+      - name: Build
+        run: make release
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.event.inputs.tag }}
+          release_name: Release ${{ github.event.inputs.tag }}
+          body: ${{ github.event.inputs.body }}
+          draft: ${{ github.event.inputs.draft }}
+          prerelease: ${{ github.event.inputs.prerelease }}
+      - name: Upload Release Asset
+        id: upload-release-asset-linux-i386
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} 
+          asset_path: release/rattus-linux-i386
+          asset_name: rattus-linux-i386
+          asset_content_type: application/x-executable

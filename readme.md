@@ -61,6 +61,9 @@ Rattus supports configuration through flags or through environment variables. Th
   
 -aws-key-secret string
   env: AWS_SECRET_ACCESS_KEY
+
+-aws-session-token string
+  env: AWS_SESSION_TOKEN
   
 -aws-region string
   env: AWS_DEFAULT_REGION

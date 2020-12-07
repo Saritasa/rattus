@@ -6,29 +6,54 @@ on:
       tag:
         description: 'Version'     
         required: true
-      body:
-        description: 'Release description'
-        required: true
       draft:
-        description: 'is draft?'
+        description: 'Is draft?'
         required: true
         default: 'true'
       prerelease:
-        description: 'Is PreRelease?'
+        description: 'Is pre-release?'
         required: true
         default: 'true'
 
 jobs:
   build:
-    name: Upload Release Builds
-    runs-on: ubuntu-latest
+    name: Build
+    runs-on: ubuntu-20.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
         with:
           ref: ${{ github.event.inputs.tag }}
+      - name: Install dependencies
+        run: go install
       - name: Build
-        run: make release
+        env:
+          CGO_ENABLED: 0
+          DEBUG: false
+        run: |
+          GOOS=linux GOARCH=386 go build -ldflags="-s -w" -a -o release/rattus-linux-i386
+          GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -a -o release/rattus-linux-amd64
+          GOOS=freebsd GOARCH=386 go build -ldflags="-s -w" -a -o release/rattus-freebsd-i386
+          GOOS=freebsd GOARCH=amd64 go build -ldflags="-s -w" -a -o release/rattus-freebsd-amd64
+          GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -a -o release/rattus-darwin-amd64
+          GOOS=windows GOARCH=386 go build -ldflags="-s -w" -a -o release/rattus-windows-i386.exe
+          GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -a -o release/rattus-windows-amd64.exe
+      - name: Compress
+        run: |
+          upx -9 --best --ultra-brute release/rattus-linux-i386
+          upx -9 --best --ultra-brute release/rattus-linux-amd64
+          upx -9 --best --ultra-brute release/rattus-freebsd-i386
+          upx -9 --best --ultra-brute release/rattus-darwin-amd64
+          upx -9 --best --ultra-brute release/rattus-windows-i386.exe
+          upx -9 --best --ultra-brute release/rattus-windows-amd64.exe
+      - name: Prepare changelog
+        id: changelog
+        run: |
+          CHANGELOG_CONTENT="$(grep -ozP '(?<=### ${{ github.event.inputs.tag }}\n)((?:.|\n(?!###)))*' changelog.md)"
+          CHANGELOG_CONTENT="${CHANGELOG_CONTENT//'%'/'%25'}"		
+          CHANGELOG_CONTENT="${CHANGELOG_CONTENT//$'\n'/'%0A'}"		
+          CHANGELOG_CONTENT="${CHANGELOG_CONTENT//$'\r'/'%0D'}"
+          echo "::set-output name=changelog::$CHANGELOG_CONTENT"
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -37,16 +62,77 @@ jobs:
         with:
           tag_name: ${{ github.event.inputs.tag }}
           release_name: Release ${{ github.event.inputs.tag }}
-          body: ${{ github.event.inputs.body }}
+          body: |
+            ${{ steps.changelog.outputs.changelog }}
           draft: ${{ github.event.inputs.draft }}
           prerelease: ${{ github.event.inputs.prerelease }}
-      - name: Upload Release Asset
+      - name: Upload Release Asset linux-i386
         id: upload-release-asset-linux-i386
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} 
-          asset_path: release/rattus-linux-i386
+          asset_path: ./release/rattus-linux-i386
           asset_name: rattus-linux-i386
           asset_content_type: application/x-executable
+      - name: Upload Release Asset linux-amd64
+        id: upload-release-asset-linux-amd64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} 
+          asset_path: ./release/rattus-linux-amd64
+          asset_name: rattus-linux-amd64
+          asset_content_type: application/x-executable
+      - name: Upload Release Asset freebsd-i386
+        id: upload-release-asset-freebsd-i386
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} 
+          asset_path: ./release/rattus-freebsd-i386
+          asset_name: rattus-freebsd-i386
+          asset_content_type: application/x-executable
+      - name: Upload Release Asset freebsd-amd64
+        id: upload-release-asset-freebsd-amd64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} 
+          asset_path: ./release/rattus-freebsd-amd64
+          asset_name: rattus-freebsd-amd64
+          asset_content_type: application/x-executable
+      - name: Upload Release Asset darwin-amd64
+        id: upload-release-asset-darwin-amd64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} 
+          asset_path: ./release/rattus-darwin-amd64
+          asset_name: rattus-darwin-amd64
+          asset_content_type: application/octet-stream
+      - name: Upload Release Asset windows-i386
+        id: upload-release-asset-windows-i386
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} 
+          asset_path: ./release/rattus-windows-i386.exe
+          asset_name: rattus-windows-i386.exe
+          asset_content_type: application/x-ms-dos-executable
+      - name: Upload Release Asset windows-amd64
+        id: upload-release-asset-windows-amd64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} 
+          asset_path: ./release/rattus-windows-amd64.exe
+          asset_name: rattus-windows-amd64.exe
+          asset_content_type: application/x-ms-dos-executable

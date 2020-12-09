@@ -1,7 +1,7 @@
 .DEFAULT_GOAL := build
 
 clean:
-	rm -f ./release
+	rm -fr release
 
 install:
 	go install -v

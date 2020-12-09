@@ -1,0 +1,69 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Version'     
+        required: true
+      draft:
+        description: 'Is draft?'
+        required: true
+        default: 'true'
+      prerelease:
+        description: 'Is pre-release?'
+        required: true
+        default: 'true'
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-18.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.inputs.tag }}
+      - name: Install dependencies
+        run: go install
+      - name: Build
+        env:
+          CGO_ENABLED: 0
+          DEBUG: false
+        run: |
+          GOOS=linux GOARCH=386 go build -ldflags="-s -w" -a -o release/rattus-linux-i386
+          GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -a -o release/rattus-linux-amd64
+          GOOS=freebsd GOARCH=386 go build -ldflags="-s -w" -a -o release/rattus-freebsd-i386
+          GOOS=freebsd GOARCH=amd64 go build -ldflags="-s -w" -a -o release/rattus-freebsd-amd64
+          GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -a -o release/rattus-darwin-amd64
+          GOOS=windows GOARCH=386 go build -ldflags="-s -w" -a -o release/rattus-windows-i386.exe
+          GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -a -o release/rattus-windows-amd64.exe
+      - name: Compress
+        run: |
+          upx -9 --best --ultra-brute release/rattus-linux-i386
+          upx -9 --best --ultra-brute release/rattus-linux-amd64
+          upx -9 --best --ultra-brute release/rattus-freebsd-i386
+          upx -9 --best --ultra-brute release/rattus-darwin-amd64
+          upx -9 --best --ultra-brute release/rattus-windows-i386.exe
+          upx -9 --best --ultra-brute release/rattus-windows-amd64.exe
+      - name: Prepare changelog
+        id: changelog
+        run: |
+          echo "$(grep -ozP '(?<=### ${{ github.event.inputs.tag }}\n)((?:.|\n(?!###)))*' changelog.md)" > release_changelog.md
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          draft: ${{ github.event.inputs.draft }}
+          prerelease: ${{ github.event.inputs.prerelease }}
+          tag_name: ${{ github.event.inputs.tag }}
+          body_path: release_changelog.md
+          files: |
+            release/rattus-linux-i386
+            release/rattus-linux-amd64
+            release/rattus-freebsd-i386
+            release/rattus-freebsd-amd64
+            release/rattus-darwin-amd64
+            release/rattus-windows-i386.exe
+            release/rattus-windows-amd64.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,4 +1,5 @@
 # Rattus
+![GitHub release](https://img.shields.io/github/v/release/Saritasa/rattus?include_prereleases&style=for-the-badge)
 
 ```Rattus``` is a lightweight credentials provisioning tool focused on:
 

@@ -9,22 +9,50 @@ import (
 
 // Used SDK https://github.com/aws/aws-sdk-go
 
-func createAWSSession(AWSRegion, AWSKeyID, AWSKeySecret, AWSSessionToken string) (*session.Session, error) {
-	if (AWSRegion != "") && (AWSKeyID != "") && (AWSKeySecret != "") {
-		return session.NewSession(&aws.Config{
-			Region:      aws.String(AWSRegion),
-			Credentials: credentials.NewStaticCredentials(AWSKeyID, AWSKeySecret, AWSSessionToken),
-		})
-	} else {
-		// Load creds from environment, shared credentials (~/.aws/credentials),
-		// or EC2 Instance Role.
-		return session.NewSession()
+func createAWSSession(
+	AWSRegion,
+	AWSKeyID,
+	AWSKeySecret,
+	AWSSessionToken string,
+	Debug bool,
+) (*session.Session, error) {
+	var awsCredentials *credentials.Credentials
+	var awsRegion *string
+
+	if (AWSKeyID != "") && (AWSKeySecret != "") && (AWSSessionToken != "") {
+		awsCredentials = credentials.NewStaticCredentials(
+			AWSKeyID,
+			AWSKeySecret,
+			AWSSessionToken,
+		)
+	} else if (AWSKeyID != "") && (AWSKeySecret != "") {
+		awsCredentials = credentials.NewStaticCredentials(
+			AWSKeyID,
+			AWSKeySecret,
+			"",
+		)
 	}
+	if AWSRegion != "" {
+		awsRegion = aws.String(AWSRegion)
+	}
+	return session.NewSession(&aws.Config{
+		Region:                        awsRegion,
+		Credentials:                   awsCredentials,
+		CredentialsChainVerboseErrors: aws.Bool(Debug),
+		LogLevel:                      aws.LogLevel(aws.LogDebug),
+	})
 }
 
-func getAWSSecretString(secretName, AWSRegion, AWSKeyID, AWSKeySecret, AWSSessionToken string) (string, error) {
+func getAWSSecretString(
+	secretName,
+	AWSRegion,
+	AWSKeyID,
+	AWSKeySecret,
+	AWSSessionToken string,
+	Debug bool,
+) (string, error) {
 	var secret string
-	awsSession, err := createAWSSession(AWSRegion, AWSKeyID, AWSKeySecret, AWSSessionToken)
+	awsSession, err := createAWSSession(AWSRegion, AWSKeyID, AWSKeySecret, AWSSessionToken, Debug)
 	if err != nil {
 		return secret, err
 	}

@@ -1,7 +1,8 @@
 # Development
 
-### Example of Visual Code configuration for testing and debugging
-```
+## Example of Visual Code configuration for testing and debugging
+
+```json
 {
     "version": "0.2.0",
     "configurations": [
@@ -36,15 +37,14 @@
 }
 ```
 
-### Deployment
+## Deployment
 
 * Add a new tag with version and add it to `changelog.md` and describe what changed
-* Then on Github open `Actions` tab pick `Release`, then click `Run workflow` and 
+* Then on Github open `Actions` tab pick `Release`, then click `Run workflow` and
   fill inputs and press `Run workflow`
 
 `GitHub` action file is at `.github/workflows/release.yml`
 
+## Known development issues
 
-### Known development issues
 * Release file compression works only with `upx 3.94`(so for now will use `ubuntu-18.04` instead of `ubuntu-20.04`(it has `upx 3.95`)). Exception is `freebsd-amd64`, because it not supported.
-

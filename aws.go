@@ -17,7 +17,6 @@ func createAWSSession(
 	Debug bool,
 ) (*session.Session, error) {
 	var awsCredentials *credentials.Credentials
-	var awsRegion *string
 
 	if (AWSKeyID != "") && (AWSKeySecret != "") && (AWSSessionToken != "") {
 		awsCredentials = credentials.NewStaticCredentials(
@@ -32,14 +31,21 @@ func createAWSSession(
 			"",
 		)
 	}
+
+	var awsRegion *string
 	if AWSRegion != "" {
 		awsRegion = aws.String(AWSRegion)
+	}
+
+	var logLevel aws.LogLevelType = aws.LogOff
+	if Debug {
+		logLevel = aws.LogDebug
 	}
 	return session.NewSession(&aws.Config{
 		Region:                        awsRegion,
 		Credentials:                   awsCredentials,
 		CredentialsChainVerboseErrors: aws.Bool(Debug),
-		LogLevel:                      aws.LogLevel(aws.LogDebug),
+		LogLevel:                      aws.LogLevel(logLevel),
 	})
 }
 

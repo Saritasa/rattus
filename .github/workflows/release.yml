@@ -42,14 +42,13 @@ jobs:
         run: |
           upx -9 --best --ultra-brute release/rattus-linux-i386
           upx -9 --best --ultra-brute release/rattus-linux-amd64
-          upx -9 --best --ultra-brute release/rattus-freebsd-i386
           upx -9 --best --ultra-brute release/rattus-darwin-amd64
           upx -9 --best --ultra-brute release/rattus-windows-i386.exe
           upx -9 --best --ultra-brute release/rattus-windows-amd64.exe
       - name: Prepare changelog
         id: changelog
         run: |
-          echo "$(grep -ozP '(?<=### ${{ github.event.inputs.tag }}\n)((?:.|\n(?!###)))*' changelog.md)" > release_changelog.md
+          echo "$(grep -ozP '(?<=## ${{ github.event.inputs.tag }}\n\n)((?:.|\n(?!##)))*' changelog.md)" > release_changelog.md
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
